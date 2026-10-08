@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HydroHabit - Minimalist Water Tracker</title>
+    <style>
+        /* CSS VARIABLE SYSTEMS FOR QUICK CONFIGURATION */
+        :root {
+            --bg-color: #f4f7f9;
+            --card-color: #ffffff;
+            --primary-blue: #3498db;
+            --secondary-blue: #2980b9;
+            --text-dark: #2c3e50;
+            --text-light: #7f8c8d;
+            --border-radius: 16px;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        /* RESET & BASE STYLES */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* MAIN APP WRAPPER */
+        .app-container {
+            background-color: var(--card-color);
+            width: 100%;
+            max-width: 420px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            text-align: center;
+        }
+
+        /* HEADER SECTION */
+        header {
+            margin-bottom: 25px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        /* PROGRESS RING VISUALIZATION */
+        .progress-box {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 25px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: rotate(-90deg); /* Rotates circle to start filling from the top */
+        }
+
+        .bg-circle {
+            fill: none;
+            stroke: #eef2f5;
+            stroke-width: 12;
+        }
+
+        .progress-circle {
+            fill: none;
+            stroke: var(--primary-blue);
+            stroke-width: 12;
+            stroke-linecap: round;
+            transition: stroke-dashoffset 0.4s ease-out; /* Smooth animated fill */
+        }
+
+        .counter-text {
+            z-index: 10;
+        }
+
+        .current-amount {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: var(--text-dark);
+            display: block;
+        }
+
+        .target-amount {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-top: 2px;
+        }
+
+        /* LOGGING INTERFACE BUTTONS */
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background-color: #f8fafc;
+            border: 2px solid #e2e8f0;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+            background-color: #f0f7fc;
+        }
+
+        button:active {
+            transform: scale(0.97);
+        }
+
+        /* SYSTEM CONTROLS (RESET / GOAL SETTING) */
+        .control-panel {
+            border-top: 1px solid #eef2f5;
+            padding-top: 20px;
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .goal-setter {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .goal-setter label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .goal-setter input {
+            width: 70px;
+            padding: 6px 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            text-align: center;
+        }
+
+        .btn-reset {
+            background: none;
+            border: none;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            color: #e74c3c;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+        }
+
+        .btn-reset:hover {
+            background-color: #fdf2f2;
+            color: #c0392b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- HEADER -->
+        <header>
+            <h1>HydroHabit</h1>
+            <p class="subtitle">Track your hydration seamlessly</p>
+        </header>
+
+        <!-- PROGRESS RING DISPLAY -->
+        <div class="progress-box">
+            <svg width="200" height="200">
+                <circle class="bg-circle" cx="100" cy="100" r="88"></circle>
+                <!-- r=88 makes a circumference of exactly 552.92 for our dasharray calculation -->
+                <circle class="progress-circle" id="progressRing" cx="100" cy="100" r="88" stroke-dasharray="553" stroke-dashoffset="553"></circle>
+            </svg>
+            
+            <div class="counter-text">
+                <span class="current-amount" id="currentDisplay">0 oz</span>
+                <span class="target-amount" id="targetDisplay">Goal: 64 oz</span>
+            </div>
+        </div>
+
+        <!-- QUICK LOGGING BUTTONS -->
+        <div class="button-group">
+            <button onclick="addWater(8)">+ 8 oz <span style="font-weight:normal; font-size:0.85rem; display:block; margin-top:2px;">Glass</span></button>
+            <button onclick="addWater(16)">+ 16 oz <span style="font-weight:normal; font-size:0.85rem; display:block; margin-top:2px;">Bottle</span></button>
+        </div>
+
+        <!-- SYSTEM CONFIGURATION PANEL -->
+        <div class="control-panel">
+            <div class="goal-setter">
+                <label for="goalInput">Daily Goal:</label>
+                <input type="number" id="goalInput" min="8" max="200" value="64" onchange="updateGoal(this.value)">
+                <span style="font-size: 0.85rem; color: var(--text-light);">oz</span>
+            </div>
+            <button class="btn-reset" onclick="resetTracker()">Reset Day</button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APP LOGIC & PERSISTENCE -->
+    <script>
+        // Application State Data Variables
+        let currentWater = 0;
+        let dailyGoal = 64;
+        const totalCircumference = 553; // Pre-calculated path length of our svg circle boundary
+
+        // DOM Element Reference Handles
+        const currentDisplay = document.getElementById('currentDisplay');
+        const targetDisplay = document.getElementById('targetDisplay');
+        const goalInput = document.getElementById('goalInput');
+        const progressRing = document.getElementById('progressRing');
+
+        // Application Startup Initialization Engine
+        function initApp() {
+            // Pull any previously stored metrics straight from the user's browser memory
+            const savedWater = localStorage.getItem('hydro_currentWater');
+            const savedGoal = localStorage.getItem('hydro_dailyGoal');
+
+            if (savedWater !== null) currentWater = parseInt(savedWater, 10);
+            if (savedGoal !== null) {
+                dailyGoal = parseInt(savedGoal, 10);
+                goalInput.value = dailyGoal;
+            }
+
+            renderUI();
+        }
+
+        // Logic Functions to Modify Data State
+        function addWater(amount) {
+            currentWater += amount;
+            localStorage.setItem('hydro_currentWater', currentWater);
+            renderUI();
+        }
+
+        function updateGoal(newGoal) {
+            let parsedGoal = parseInt(newGoal, 10);
+            // Quick fallback bounds protection to ensure clean data validation checks
+            if (isNaN(parsedGoal) || parsedGoal < 8) parsedGoal = 64;
+            
+            dailyGoal = parsedGoal;
+            goalInput.value = dailyGoal;
+            localStorage.setItem('hydro_dailyGoal', dailyGoal);
+            renderUI();
+        }
+
+        function resetTracker() {
+            if (confirm("Are you sure you want to clear today's hydration history?")) {
+                currentWater = 0;
+                localStorage.setItem('hydro_currentWater', currentWater);
+                renderUI();
+            }
+        }
+
+        // UI Core Synchronization Render Engine
+        function renderUI() {
+            // 1. Synchronize text labels 
+            currentDisplay.textContent = `${currentWater} oz`;
+            targetDisplay.textContent = `Goal: ${dailyGoal} oz`;
+
+            // 2. Compute fill ratio mathematical percentages
+            let fillPercent = currentWater / dailyGoal;
+            if (fillPercent > 1) fillPercent = 1; // Cap the SVG visual fill boundary ring at 100%
+
+            // 3. Drive structural updates to SVG styling paths for sleek animations
+            const offsetValue = totalCircumference - (fillPercent * totalCircumference);
+            progressRing.style.strokeDashoffset = offsetValue;
+        }
+
+        // Kick off initialization sequence when script finishes execution lifecycle
+        initApp();
+    </script>
+</body>
+</html>
